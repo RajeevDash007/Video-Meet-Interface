@@ -1,0 +1,213 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Video Conferencing</title>
+  <script src="https://meet.jit.si/external_api.js"></script>
+</head>
+<style>
+    /* Style the chat container */
+#chat-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  /* Style the chat messages */
+
+  
+  /* Style the admin chat */
+  #admin-chat {
+    display: none;
+    width: 100%;
+    height: 300px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  
+  /* Style the chat input */
+  #chat-input {
+    width: 80%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+  
+  /* Style the send button */
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+  }
+  
+  /* Style the auto messages container */
+  #auto-messages-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  /* Style the auto message category and subcategory */
+  select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+  
+  /* Style the auto message send button */
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+  }
+</style>
+<body>
+    <div id="meet"></div>
+  <div>
+    <h3>Admin Chat</h3>
+    <div id="main-chat"></div>
+    <div id="admin-chat"></div>
+    <form onsubmit="return false;">
+      <input type="text" id="chat-input">
+      <button onclick="sendMessage()">Send</button>
+    </form>
+  </div>
+
+  <div>
+    <h3>Auto Messages</h3>
+    <select id="auto-message-category" onchange="updateAutoMessages()">
+      <option value="">Select Category</option>
+      <option value="Start_of_meeting">Start of Meeting</option>
+      <option value="End_of_meeting">End of Meeting</option>
+      <option value="MicOff">Mic Off</option>
+      <option value="Screen_Share">Share Screen</option>
+    </select>
+    <select id="auto-message-subcategory">
+      <option value="">Select Subcategory</option>
+    </select>
+    <button onclick="sendAutoMessage()">Send</button>
+  </div>
+  
+
+  <script>
+    
+    
+    const domain = 'meet.jit.si';
+    const options = {
+      roomName: 'CariKture-TrialMeeting',
+      parentNode: document.querySelector('#meet'),
+    };
+    const api = new JitsiMeetExternalAPI(domain, options);
+
+  
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdmin = urlParams.get('isAdmin');
+
+
+
+    const autoMessages = {
+      Start_of_meeting: {
+        hello: 'Hello everyone!',
+        good_morning: 'Good morning, folks!',
+        welcome: 'Welcome to the meeting!',
+      },
+      End_of_meeting: {
+        goodbye: 'Goodbye, see you next time!',
+        see_you_Later: 'See you later, CariKturers!',
+        Thanks_for_joining: 'Thank you for joining',
+      },
+      MicOff:{
+        turn_off: 'Kindly,turn off your mic.',
+        Noise: 'There is a background noise, kindly turn off your mic.',
+      },
+      Screen_Share:{
+        Show_Screen: 'Share your screen Please',
+      }
+    };
+
+
+
+    function updateAutoMessages() {
+      const category = document.querySelector('#auto-message-category').value;
+      const subcategorySelect = document.querySelector('#auto-message-subcategory');
+      subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+      if (category !== '') {
+        const subcategories = Object.keys(autoMessages[category]);
+        for (let subcategory of subcategories) {
+          const option = document.createElement('option');
+          option.value = subcategory;
+          option.textContent = subcategory;
+          subcategorySelect.appendChild(option);
+        }
+      }
+    }
+
+
+
+    function sendAutoMessage() {
+      const category = document.querySelector('#auto-message-category').value;
+      const subcategory = document.querySelector('#auto-message-subcategory').value;
+      if (category !== '' && subcategory !== '') {
+        const message = autoMessages[category][subcategory];
+        if (isAdmin === 'true') {
+          api.sendEndpointTextMessage(message);
+        } else {
+          api.executeCommand('sendChatMessage', message);
+        }
+      }
+    }
+
+
+
+    if (isAdmin === 'true') {
+      api.executeCommand('displayName', 'Admin');
+    }
+
+
+    api.on('incomingMessage', (data) => {
+      const chat = document.querySelector('#main-chat');
+      if (data.nickname === 'Admin') {
+        const adminChat = document.querySelector('#admin-chat');
+        adminChat.textContent += `${data.message}\n`;
+      } else {
+        chat.textContent += `[${data.nickname}] ${data.message}\n`;
+      }
+    });
+    
+    
+    function sendMessage() {
+      const input = document.querySelector('#chat-input');
+      const message = input.value.trim();
+      if (message !== '') {
+        if (isAdmin === 'true') {
+          api.sendEndpointTextMessage(message);
+        } else {
+          api.executeCommand('sendChatMessage', message);
+        }
+        input.value = '';
+        }
+    }
+
+
+  </script>
+</body>
+</html>
